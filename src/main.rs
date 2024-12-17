@@ -1,14 +1,15 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use iced::event::{self, Event};
-use iced::widget::{button, center, checkbox, text, Column};
+use iced::widget::{button, center, checkbox, text, Column, Text};
 use iced::window;
 use iced::{Center, Element, Fill, Subscription, Task};
+use rfd::FileDialog;
 
 pub fn main() -> iced::Result {
     iced::application("Events - Iced", AppState::update, AppState::view)
         .subscription(AppState::subscription)
-        .exit_on_close_request(false)
+        // .exit_on_close_request(false)
         .run()
 }
 
@@ -16,12 +17,15 @@ pub fn main() -> iced::Result {
 struct AppState {
     last: Vec<Event>,
     enabled: bool,
+    selected_directory: Option<String>,
 }
 
 #[derive(Debug, Clone)]
 enum Message {
     EventOccurred(Event),
     Toggled(bool),
+    DirectoryOpen,
+    DirectorySelected(Option<String>),
     Exit,
 }
 
@@ -49,6 +53,16 @@ impl AppState {
 
                 Task::none()
             }
+            Message::DirectoryOpen => {
+                Task::perform(async { FileDialog::new().pick_folder() }, |result| {
+                    Message::DirectorySelected(result.map(|path| path.display().to_string()))
+                })
+            }
+            Message::DirectorySelected(directory) => {
+                self.selected_directory = directory;
+
+                Task::none()
+            }
             Message::Exit => window::get_latest().and_then(window::close),
         }
     }
@@ -72,9 +86,22 @@ impl AppState {
             .padding(10)
             .on_press(Message::Exit);
 
+        let open_directory_button = button(text("Open Directory").width(Fill).align_x(Center))
+            .width(400)
+            .padding(10)
+            .on_press(Message::DirectoryOpen);
+
+        let directory_text = Text::new(
+            self.selected_directory
+                .clone()
+                .unwrap_or_else(|| "No directory selected".to_string()),
+        );
+
         let content = Column::new()
             .align_x(Center)
             .spacing(20)
+            .push(open_directory_button)
+            .push(directory_text)
             .push(events)
             .push(toggle)
             .push(exit);

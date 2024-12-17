@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use iced::event::{self, Event};
-use iced::widget::{button, center, checkbox, text, Column, Text};
+use iced::widget::{button, center, checkbox, text, Column, Row, Text};
 use iced::window;
 use iced::{Center, Element, Fill, Subscription, Task};
 use rfd::FileDialog;
@@ -86,8 +86,22 @@ impl AppState {
             .padding(10)
             .on_press(Message::Exit);
 
-        let open_directory_button = button(text("Open Directory").width(Fill).align_x(Center))
-            .width(400)
+        let dir_row = self.direction_row();
+
+        let content = Column::new()
+            .align_x(Center)
+            .spacing(20)
+            .push(dir_row)
+            .push(events)
+            .push(toggle)
+            .push(exit);
+
+        center(content).into()
+    }
+
+    fn direction_row(&self) -> Row<Message> {
+        let open_directory_button = button(text("Open Directory").align_x(Center))
+            .width(200)
             .padding(10)
             .on_press(Message::DirectoryOpen);
 
@@ -95,17 +109,14 @@ impl AppState {
             self.selected_directory
                 .clone()
                 .unwrap_or_else(|| "No directory selected".to_string()),
-        );
+        )
+        .width(400);
 
-        let content = Column::new()
-            .align_x(Center)
+        let row = Row::new()
+            .align_y(Center)
             .spacing(20)
             .push(open_directory_button)
-            .push(directory_text)
-            .push(events)
-            .push(toggle)
-            .push(exit);
-
-        center(content).into()
+            .push(directory_text);
+        row
     }
 }

@@ -6,14 +6,14 @@ use iced::window;
 use iced::{Center, Element, Fill, Subscription, Task};
 
 pub fn main() -> iced::Result {
-    iced::application("Events - Iced", Events::update, Events::view)
-        .subscription(Events::subscription)
+    iced::application("Events - Iced", AppState::update, AppState::view)
+        .subscription(AppState::subscription)
         .exit_on_close_request(false)
         .run()
 }
 
 #[derive(Debug, Default)]
-struct Events {
+struct AppState {
     last: Vec<Event>,
     enabled: bool,
 }
@@ -25,7 +25,7 @@ enum Message {
     Exit,
 }
 
-impl Events {
+impl AppState {
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::EventOccurred(event) if self.enabled => {

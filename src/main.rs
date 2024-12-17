@@ -44,6 +44,9 @@ impl AppState {
             Message::EventOccurred(event) => {
                 if let Event::Window(window::Event::CloseRequested) = event {
                     window::get_latest().and_then(window::close)
+                } else if let Event::Window(window::Event::FileDropped(path)) = event {
+                    self.selected_directory = Some(path.display().to_string());
+                    Task::none()
                 } else {
                     Task::none()
                 }

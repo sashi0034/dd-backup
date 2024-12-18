@@ -89,12 +89,15 @@ impl AppState {
             .padding(10)
             .on_press(Message::Exit);
 
-        let dir_row = self.direction_row();
+        let source_dir_row = self.direction_row("Source Directory");
+
+        let destination_dir_row = self.direction_row("Destination Directory");
 
         let content = Column::new()
             .align_x(Center)
             .spacing(20)
-            .push(dir_row)
+            .push(source_dir_row)
+            .push(destination_dir_row)
             .push(events)
             .push(toggle)
             .push(exit);
@@ -102,8 +105,8 @@ impl AppState {
         center(content).into()
     }
 
-    fn direction_row(&self) -> Row<Message> {
-        let open_directory_button = button(text("Open Directory").align_x(Center))
+    fn direction_row(&self, button_text: &str) -> Row<Message> {
+        let open_directory_button = button(text(button_text.to_string()).align_x(Center))
             .width(200)
             .padding(10)
             .on_press(Message::DirectoryOpen);
@@ -111,7 +114,7 @@ impl AppState {
         let directory_text = Text::new(
             self.selected_directory
                 .clone()
-                .unwrap_or_else(|| "No directory selected".to_string()),
+                .unwrap_or_else(|| "(Nothing selected)".to_string()),
         )
         .width(400);
 

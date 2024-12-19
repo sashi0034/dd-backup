@@ -1,8 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use iced::event::{self, Event};
-use iced::widget::{button, center, checkbox, text, Column, Row, Text};
-use iced::window;
+use iced::widget::{button, center, checkbox, row, text, text_input, Column, Row, Text};
+use iced::{window, Padding};
 use iced::{Center, Element, Fill, Subscription, Task};
 use rfd::FileDialog;
 
@@ -17,7 +17,8 @@ pub fn main() -> iced::Result {
 struct AppState {
     last: Vec<Event>,
     enabled: bool,
-    selected_directory: Option<String>,
+    source_directory: String,
+    destination_directory: String,
 }
 
 #[derive(Debug, Clone)]
@@ -26,6 +27,8 @@ enum Message {
     Toggled(bool),
     DirectoryOpen,
     DirectorySelected(Option<String>),
+    SourceDirectoryInput(String),
+    SourceDirectorySubmit,
     Exit,
 }
 
@@ -45,7 +48,7 @@ impl AppState {
                 if let Event::Window(window::Event::CloseRequested) = event {
                     window::get_latest().and_then(window::close)
                 } else if let Event::Window(window::Event::FileDropped(path)) = event {
-                    self.selected_directory = Some(path.display().to_string());
+                    self.source_directory = path.display().to_string();
                     Task::none()
                 } else {
                     Task::none()
@@ -62,10 +65,15 @@ impl AppState {
                 })
             }
             Message::DirectorySelected(directory) => {
-                self.selected_directory = directory;
+                self.source_directory = directory.unwrap_or_else(|| self.source_directory.clone());
 
                 Task::none()
             }
+            Message::SourceDirectoryInput(dir) => {
+                self.source_directory = dir;
+                Task::none()
+            }
+            Message::SourceDirectorySubmit => Task::none(),
             Message::Exit => window::get_latest().and_then(window::close),
         }
     }
@@ -91,9 +99,10 @@ impl AppState {
             .padding(10)
             .on_press(Message::Exit);
 
-        let source_dir_row = self.direction_row("Source Directory");
+        let source_dir_row = self.direction_row("Source Directory", &self.source_directory);
 
-        let destination_dir_row = self.direction_row("Destination Directory");
+        let destination_dir_row =
+            self.direction_row("Destination Directory", &self.destination_directory);
 
         let content = Column::new()
             .align_x(Center)
@@ -107,24 +116,28 @@ impl AppState {
         center(content).into()
     }
 
-    fn direction_row(&self, button_text: &str) -> Row<Message> {
+    fn direction_row(&self, button_text: &str, dir_str: &str) -> Row<Message> {
         let open_directory_button = button(text(button_text.to_string()).align_x(Center))
             .width(200)
             .padding(10)
             .on_press(Message::DirectoryOpen);
 
-        let directory_text = Text::new(
-            self.selected_directory
-                .clone()
-                .unwrap_or_else(|| "(Nothing selected)".to_string()),
-        )
-        .width(400);
+        // let directory_text = Text::new(
+        //     self.selected_directory
+        //         .clone()
+        //         .unwrap_or_else(|| "(Nothing selected)".to_string()),
+        // )
+        // .width(400);
 
-        let row = Row::new()
+        let directory_input = text_input("", &dir_str)
+            .width(Fill)
+            .padding(10)
+            .on_input(Message::SourceDirectoryInput)
+            .on_submit(Message::SourceDirectorySubmit);
+
+        row![open_directory_button, directory_input]
             .align_y(Center)
-            .spacing(20)
-            .push(open_directory_button)
-            .push(directory_text);
-        row
+            .spacing(10)
+            .padding(Padding::from([0, 20]))
     }
 }

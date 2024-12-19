@@ -82,7 +82,9 @@ impl AppState {
                 .map(Element::from),
         );
 
-        let toggle = checkbox("Listen to runtime events", self.enabled).on_toggle(Message::Toggled);
+        // center をつけると、余白領域を埋め尽くす
+        let toggle =
+            center(checkbox("Listen to runtime events", self.enabled).on_toggle(Message::Toggled));
 
         let exit = button(text("Exit").width(Fill).align_x(Center))
             .width(100)

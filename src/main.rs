@@ -1,6 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use iced::event::{self, Event};
+use iced::widget::text::Shaping::Advanced;
+use iced::widget::text::{Shaping, Style};
 use iced::widget::{
     button, center, checkbox, horizontal_space, row, scrollable, text, text_input, Column, Row,
     Text,
@@ -10,10 +12,13 @@ use iced::{Center, Element, Fill, Subscription, Task};
 use rfd::FileDialog;
 use std::fs;
 use std::path::Path;
+use std::string::ToString;
 
 pub fn main() -> iced::Result {
     iced::application("Events - Iced", AppState::update, AppState::view)
         .subscription(AppState::subscription)
+        .font(include_bytes!("../fonts/Noto_Sans_JP/NotoSansJP-VariableFont_wght.ttf").as_slice())
+        .font(include_bytes!("../fonts/icons.ttf").as_slice())
         // .exit_on_close_request(false)
         .run()
 }
@@ -115,12 +120,18 @@ impl AppState {
             list_files_in_directory((&self.source_directory))
                 .into_iter()
                 .fold(Column::new(), |col, file| {
-                    let sync_button = button(text("Sync").width(Fill).align_x(Center))
-                        .width(100)
-                        .padding(10);
+                    let sync_button = button(
+                        text("Sync")
+                            .width(Fill)
+                            .align_x(Center)
+                            .shaping(Shaping::Advanced),
+                    )
+                    .style(button::success)
+                    .width(100)
+                    .padding(10);
                     // .on_press(Message::Exit);
                     col.push(
-                        row![sync_button, Text::new(file)]
+                        row![sync_button, Text::new(file).shaping(Advanced)]
                             .align_y(Center)
                             .padding(10)
                             .spacing(10),
@@ -136,10 +147,15 @@ impl AppState {
         // let toggle =
         //     center(checkbox("Listen to runtime events", self.enabled).on_toggle(Message::Toggled));
 
-        let exit = button(text("Exit").width(Fill).align_x(Center))
-            .width(100)
-            .padding(10)
-            .on_press(Message::Exit);
+        let exit = button(
+            text("Exit \u{F1F8}")
+                .shaping(Advanced)
+                .width(Fill)
+                .align_x(Center),
+        )
+        .width(100)
+        .padding(10)
+        .on_press(Message::Exit);
 
         let source_dir_row = self.direction_row("Source Directory", &self.source_directory);
 

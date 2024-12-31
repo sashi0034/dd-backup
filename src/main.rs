@@ -2,9 +2,10 @@
 
 use iced::event::{self, Event};
 use iced::widget::{
-    button, center, checkbox, row, scrollable, text, text_input, Column, Row, Text,
+    button, center, checkbox, horizontal_space, row, scrollable, text, text_input, Column, Row,
+    Text,
 };
-use iced::{widget, window, Padding};
+use iced::{widget, window, Left, Padding};
 use iced::{Center, Element, Fill, Subscription, Task};
 use rfd::FileDialog;
 use std::fs;
@@ -113,13 +114,27 @@ impl AppState {
         let file_list = scrollable(
             list_files_in_directory((&self.source_directory))
                 .into_iter()
-                .fold(Column::new(), |col, file| col.push(Text::new(file))),
+                .fold(Column::new(), |col, file| {
+                    let sync_button = button(text("Sync").width(Fill).align_x(Center))
+                        .width(100)
+                        .padding(10);
+                    // .on_press(Message::Exit);
+                    col.push(
+                        row![sync_button, Text::new(file)]
+                            .align_y(Center)
+                            .padding(10)
+                            .spacing(10),
+                    )
+                })
+                .spacing(10)
+                .width(Fill)
+                .align_x(Left),
         )
         .height(Fill);
 
         // center をつけると、余白領域を埋め尽くす
-        let toggle =
-            center(checkbox("Listen to runtime events", self.enabled).on_toggle(Message::Toggled));
+        // let toggle =
+        //     center(checkbox("Listen to runtime events", self.enabled).on_toggle(Message::Toggled));
 
         let exit = button(text("Exit").width(Fill).align_x(Center))
             .width(100)
@@ -131,7 +146,7 @@ impl AppState {
         let destination_dir_row =
             self.direction_row("Destination Directory", &self.destination_directory);
 
-        let content = widget::column![source_dir_row, destination_dir_row, file_list, toggle, exit]
+        let content = widget::column![source_dir_row, destination_dir_row, file_list, exit]
             .align_x(Center)
             .spacing(20)
             .padding(20);

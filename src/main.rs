@@ -1,10 +1,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use iced::event::{self, Event};
-use iced::widget::{button, center, checkbox, row, text, text_input, Column, Row, Text};
-use iced::{window, Padding};
+use iced::widget::{
+    button, center, checkbox, row, scrollable, text, text_input, Column, Row, Text,
+};
+use iced::{widget, window, Padding};
 use iced::{Center, Element, Fill, Subscription, Task};
 use rfd::FileDialog;
+use std::fs;
+use std::path::Path;
 
 pub fn main() -> iced::Result {
     iced::application("Events - Iced", AppState::update, AppState::view)
@@ -30,6 +34,22 @@ enum Message {
     SourceDirectoryInput(String),
     SourceDirectorySubmit,
     Exit,
+}
+
+fn list_files_in_directory(dir_path: &str) -> Vec<String> {
+    let path = Path::new(dir_path);
+
+    if path.is_dir() {
+        match fs::read_dir(path) {
+            Ok(entries) => entries
+                .filter_map(|entry| entry.ok())
+                .filter_map(|entry| entry.path().file_name()?.to_str().map(|s| s.to_string()))
+                .collect(),
+            Err(_) => Vec::new(),
+        }
+    } else {
+        Vec::new()
+    }
 }
 
 impl AppState {
@@ -83,12 +103,19 @@ impl AppState {
     }
 
     fn view(&self) -> Element<Message> {
-        let events = Column::with_children(
-            self.last
-                .iter()
-                .map(|event| text!("{event:?}").size(40))
-                .map(Element::from),
-        );
+        // let events = Column::with_children(
+        //     self.last
+        //         .iter()
+        //         .map(|event| text!("{event:?}").size(40))
+        //         .map(Element::from),
+        // );
+
+        let file_list = scrollable(
+            list_files_in_directory((&self.source_directory))
+                .into_iter()
+                .fold(Column::new(), |col, file| col.push(Text::new(file))),
+        )
+        .height(Fill);
 
         // center をつけると、余白領域を埋め尽くす
         let toggle =
@@ -104,15 +131,10 @@ impl AppState {
         let destination_dir_row =
             self.direction_row("Destination Directory", &self.destination_directory);
 
-        let content = Column::new()
+        let content = widget::column![source_dir_row, destination_dir_row, file_list, toggle, exit]
             .align_x(Center)
             .spacing(20)
-            .push(source_dir_row)
-            .push(destination_dir_row)
-            .push(events)
-            .push(toggle)
-            .push(exit);
-
+            .padding(20);
         center(content).into()
     }
 

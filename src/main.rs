@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use chrono::{DateTime, Local, Utc};
 use iced::event::{self, Event};
 use iced::widget::text::Shaping::Advanced;
 use iced::widget::text::{Shaping, Style};
@@ -13,22 +14,30 @@ use rfd::FileDialog;
 use std::fs;
 use std::path::Path;
 use std::string::ToString;
+use std::time::SystemTime;
 
 pub fn main() -> iced::Result {
-    iced::application("Events - Iced", AppState::update, AppState::view)
-        .subscription(AppState::subscription)
+    iced::application("Events - Iced", App::update, App::view)
+        .subscription(App::subscription)
         .font(include_bytes!("../fonts/Noto_Sans_JP/NotoSansJP-VariableFont_wght.ttf").as_slice())
         .font(include_bytes!("../fonts/icons.ttf").as_slice())
         // .exit_on_close_request(false)
-        .run_with(AppState::new)
+        .run_with(App::new)
 }
 
 #[derive(Debug, Default)]
-struct AppState {
-    last: Vec<Event>,
+struct App {
     enabled: bool,
+    current_files: Vec<FileData>,
     source_directory: String,
     destination_directory: String,
+}
+
+#[derive(Debug, Clone)]
+struct FileData {
+    name: String,
+    last_edited: String,
+    export_path: String,
 }
 
 #[derive(Debug, Clone)]
@@ -42,14 +51,27 @@ enum Message {
     Exit,
 }
 
-fn list_files_in_directory(dir_path: &str) -> Vec<String> {
+fn get_file_list_in_directory(dir_path: &str) -> Vec<FileData> {
     let path = Path::new(dir_path);
 
     if path.is_dir() {
         match fs::read_dir(path) {
             Ok(entries) => entries
                 .filter_map(|entry| entry.ok())
-                .filter_map(|entry| entry.path().file_name()?.to_str().map(|s| s.to_string()))
+                .filter_map(|entry| {
+                    let metadata = entry.metadata().ok()?;
+                    if !metadata.is_file() {
+                        return None;
+                    }
+
+                    let last_edited: DateTime<Local> = DateTime::from(metadata.modified().ok()?);
+                    let name = entry.path().file_name()?.to_str()?.to_string();
+                    Some(FileData {
+                        name,
+                        last_edited: last_edited.format("%Y/%m/%d %H:%M:%S").to_string(),
+                        export_path: "".to_string(),
+                    })
+                })
                 .collect(),
             Err(_) => Vec::new(),
         }
@@ -58,12 +80,12 @@ fn list_files_in_directory(dir_path: &str) -> Vec<String> {
     }
 }
 
-impl AppState {
+impl App {
     fn new() -> (Self, Task<Message>) {
         (
             Self {
-                last: Vec::new(),
                 enabled: true,
+                current_files: Vec::new(),
                 source_directory: "F:\\".to_string(),
                 destination_directory: "".to_string(),
             },
@@ -74,11 +96,11 @@ impl AppState {
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::EventOccurred(event) if self.enabled => {
-                self.last.push(event);
-
-                if self.last.len() > 5 {
-                    let _ = self.last.remove(0);
-                }
+                // self.last.push(event);
+                //
+                // if self.last.len() > 5 {
+                //     let _ = self.last.remove(0);
+                // }
 
                 Task::none()
             }
@@ -109,6 +131,8 @@ impl AppState {
             }
             Message::SourceDirectoryInput(dir) => {
                 self.source_directory = dir;
+                self.current_files = get_file_list_in_directory(&self.source_directory);
+
                 Task::none()
             }
             Message::SourceDirectorySubmit => Task::none(),
@@ -128,8 +152,9 @@ impl AppState {
         //         .map(Element::from),
         // );
 
+        let current_files = &self.current_files;
         let file_list = scrollable(
-            list_files_in_directory((&self.source_directory))
+            current_files
                 .into_iter()
                 .fold(Column::new(), |col, file| {
                     let sync_button = button(
@@ -142,11 +167,14 @@ impl AppState {
                     .width(100)
                     .padding(10);
                     // .on_press(Message::Exit);
+
                     col.push(
                         row![
                             sync_button,
                             widget::column![
-                                Text::new(file).shaping(Advanced),
+                               widget::row![Text::new(&file.name).shaping(Advanced),
+                                    horizontal_space(),
+                                    Text::new(&file.last_edited)],
                                  widget::row![text_input("", &self.destination_directory) // FIXME
                                     .on_input(Message::SourceDirectoryInput)
                                     .on_submit(Message::SourceDirectorySubmit)]

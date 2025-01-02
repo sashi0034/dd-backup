@@ -20,7 +20,7 @@ pub fn main() -> iced::Result {
         .font(include_bytes!("../fonts/Noto_Sans_JP/NotoSansJP-VariableFont_wght.ttf").as_slice())
         .font(include_bytes!("../fonts/icons.ttf").as_slice())
         // .exit_on_close_request(false)
-        .run()
+        .run_with(AppState::new)
 }
 
 #[derive(Debug, Default)]
@@ -59,6 +59,18 @@ fn list_files_in_directory(dir_path: &str) -> Vec<String> {
 }
 
 impl AppState {
+    fn new() -> (Self, Task<Message>) {
+        (
+            Self {
+                last: Vec::new(),
+                enabled: true,
+                source_directory: "F:\\".to_string(),
+                destination_directory: "".to_string(),
+            },
+            Task::none(),
+        )
+    }
+
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::EventOccurred(event) if self.enabled => {
@@ -131,10 +143,20 @@ impl AppState {
                     .padding(10);
                     // .on_press(Message::Exit);
                     col.push(
-                        row![sync_button, Text::new(file).shaping(Advanced)]
-                            .align_y(Center)
-                            .padding(10)
-                            .spacing(10),
+                        row![
+                            sync_button,
+                            widget::column![
+                                Text::new(file).shaping(Advanced),
+                                 widget::row![text_input("", &self.destination_directory) // FIXME
+                                    .on_input(Message::SourceDirectoryInput)
+                                    .on_submit(Message::SourceDirectorySubmit)]
+                                .spacing(10)
+                                .padding(Padding::from([5, 10]))
+                            ]
+                        ]
+                        .align_y(Center)
+                        .spacing(10)
+                        .padding(Padding::from([5, 10])),
                     )
                 })
                 .spacing(10)

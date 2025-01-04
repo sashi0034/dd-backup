@@ -1,26 +1,28 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use chrono::{DateTime, Local, Utc};
+mod user_data;
+
+use crate::user_data::{FileInfo, UserData};
 use iced::event::{self, Event};
+use iced::widget::text::Shaping;
 use iced::widget::text::Shaping::Advanced;
-use iced::widget::text::{Shaping, Style};
 use iced::widget::{
-    button, center, checkbox, horizontal_space, row, scrollable, text, text_input, Column, Row,
-    Text,
+    button, center, horizontal_space, row, scrollable, text, text_input, Column, Row, Text,
 };
 use iced::{widget, window, Left, Padding};
 use iced::{Center, Element, Fill, Subscription, Task};
 use rfd::FileDialog;
-use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::string::ToString;
-use std::time::SystemTime;
 
 pub fn main() -> iced::Result {
     iced::application("DD Backup", App::update, App::view)
         .subscription(App::subscription)
         .font(include_bytes!("../fonts/Noto_Sans_JP/NotoSansJP-VariableFont_wght.ttf").as_slice())
-        .font(include_bytes!("../fonts/materialdesignicons/materialdesignicons-webfont.ttf").as_slice())
+        .font(
+            include_bytes!("../fonts/materialdesignicons/materialdesignicons-webfont.ttf")
+                .as_slice(),
+        )
         // .exit_on_close_request(false)
         .run_with(App::new)
 }
@@ -28,16 +30,8 @@ pub fn main() -> iced::Result {
 #[derive(Debug, Default)]
 struct App {
     enabled: bool,
-    current_files: Vec<FileData>,
     source_directory: String,
-    destination_directory: String,
-}
-
-#[derive(Debug, Clone)]
-struct FileData {
-    name: String,
-    last_edited: String,
-    export_path: String,
+    user_data: UserData,
 }
 
 #[derive(Debug, Clone)]
@@ -51,32 +45,42 @@ enum Message {
     Exit,
 }
 
-fn get_file_list_in_directory(dir_path: &str) -> Vec<FileData> {
-    let path = Path::new(dir_path);
+// fn get_file_list_in_directory(dir_path: &str) -> Vec<FileData> {
+//     let path = Path::new(dir_path);
+//
+//     if path.is_dir() {
+//         match fs::read_dir(path) {
+//             Ok(entries) => entries
+//                 .filter_map(|entry| entry.ok())
+//                 .filter_map(|entry| {
+//                     let metadata = entry.metadata().ok()?;
+//                     if !metadata.is_file() {
+//                         return None;
+//                     }
+//
+//                     let last_edited: DateTime<Local> = DateTime::from(metadata.modified().ok()?);
+//                     let name = entry.path().file_name()?.to_str()?.to_string();
+//                     Some(FileData {
+//                         name,
+//                         last_edited: last_edited.format("%Y/%m/%d %H:%M:%S").to_string(),
+//                         export_path: "".to_string(),
+//                     })
+//                 })
+//                 .collect(),
+//             Err(_) => Vec::new(),
+//         }
+//     } else {
+//         Vec::new()
+//     }
+// }
 
+fn get_directory_of_file(path: &Path) -> Option<PathBuf> {
     if path.is_dir() {
-        match fs::read_dir(path) {
-            Ok(entries) => entries
-                .filter_map(|entry| entry.ok())
-                .filter_map(|entry| {
-                    let metadata = entry.metadata().ok()?;
-                    if !metadata.is_file() {
-                        return None;
-                    }
-
-                    let last_edited: DateTime<Local> = DateTime::from(metadata.modified().ok()?);
-                    let name = entry.path().file_name()?.to_str()?.to_string();
-                    Some(FileData {
-                        name,
-                        last_edited: last_edited.format("%Y/%m/%d %H:%M:%S").to_string(),
-                        export_path: "".to_string(),
-                    })
-                })
-                .collect(),
-            Err(_) => Vec::new(),
-        }
+        None
+    } else if path.is_file() {
+        path.parent().map(|p| p.to_path_buf())
     } else {
-        Vec::new()
+        None
     }
 }
 
@@ -85,9 +89,8 @@ impl App {
         (
             Self {
                 enabled: true,
-                current_files: Vec::new(),
-                source_directory: "F:\\".to_string(),
-                destination_directory: "".to_string(),
+                source_directory: "".to_string(),
+                user_data: UserData::new(),
             },
             Task::none(),
         )
@@ -95,20 +98,21 @@ impl App {
 
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
-            Message::EventOccurred(event) if self.enabled => {
-                // self.last.push(event);
-                //
-                // if self.last.len() > 5 {
-                //     let _ = self.last.remove(0);
-                // }
-
-                Task::none()
-            }
             Message::EventOccurred(event) => {
                 if let Event::Window(window::Event::CloseRequested) = event {
                     window::get_latest().and_then(window::close)
                 } else if let Event::Window(window::Event::FileDropped(path)) = event {
-                    self.source_directory = path.display().to_string();
+                    let dir_path = get_directory_of_file(&path);
+                    if dir_path.is_none() {
+                        return Task::none();
+                    }
+
+                    self.source_directory = dir_path.unwrap().display().to_string();
+                    let current_directory = self
+                        .user_data
+                        .touch_directory_or_insert(&self.source_directory);
+                    current_directory.files.push(FileInfo::from_path(&path));
+
                     Task::none()
                 } else {
                     Task::none()
@@ -131,7 +135,6 @@ impl App {
             }
             Message::SourceDirectoryInput(dir) => {
                 self.source_directory = dir;
-                self.current_files = get_file_list_in_directory(&self.source_directory);
 
                 Task::none()
             }
@@ -152,19 +155,20 @@ impl App {
         //         .map(Element::from),
         // );
 
-        let current_files = &self.current_files;
-        let file_list = scrollable(
-            current_files
+        let current_directory = self.user_data.find_directory(&self.source_directory);
+        let file_list = scrollable(if let Some(dir) = current_directory {
+            let files = &dir.files;
+            files
                 .into_iter()
                 .fold(Column::new(), |col, file| {
                     let sync_button = button(
-                        text("Sync")
+                        text("\u{F1217}")
                             .width(Fill)
                             .align_x(Center)
                             .shaping(Shaping::Advanced),
                     )
                     .style(button::success)
-                    .width(80)
+                    .width(50)
                     .padding(10);
                     // .on_press(Message::Exit);
 
@@ -172,10 +176,12 @@ impl App {
                         row![
                             sync_button,
                             widget::column![
-                               widget::row![Text::new(&file.name).shaping(Advanced),
+                                widget::row![
+                                    Text::new(&file.name).shaping(Advanced),
                                     horizontal_space(),
-                                    Text::new(&file.last_edited)],
-                                 widget::row![text_input("", &self.destination_directory) // FIXME
+                                    Text::new(&file.last_edited)
+                                ],
+                                widget::row![text_input("", &file.export_path)
                                     .on_input(Message::SourceDirectoryInput)
                                     .on_submit(Message::SourceDirectorySubmit)]
                                 .spacing(10)
@@ -189,8 +195,10 @@ impl App {
                 })
                 .spacing(10)
                 .width(Fill)
-                .align_x(Left),
-        )
+                .align_x(Left)
+        } else {
+            Column::new()
+        })
         .height(Fill);
 
         // center をつけると、余白領域を埋め尽くす
@@ -209,8 +217,11 @@ impl App {
 
         let source_dir_row = self.direction_row("Source Directory", &self.source_directory);
 
-        let destination_dir_row =
-            self.direction_row("Destination Directory", &self.destination_directory);
+        let destination_dir_row = if let Some(dir) = current_directory {
+            self.direction_row("Destination Directory", &dir.backup_directory)
+        } else {
+            self.direction_row("Destination Directory", "")
+        };
 
         let content = widget::column![source_dir_row, destination_dir_row, file_list, exit]
             .align_x(Center)

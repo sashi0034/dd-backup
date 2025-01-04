@@ -17,10 +17,10 @@ use std::string::ToString;
 use std::time::SystemTime;
 
 pub fn main() -> iced::Result {
-    iced::application("Events - Iced", App::update, App::view)
+    iced::application("DD Backup", App::update, App::view)
         .subscription(App::subscription)
         .font(include_bytes!("../fonts/Noto_Sans_JP/NotoSansJP-VariableFont_wght.ttf").as_slice())
-        .font(include_bytes!("../fonts/icons.ttf").as_slice())
+        .font(include_bytes!("../fonts/materialdesignicons/materialdesignicons-webfont.ttf").as_slice())
         // .exit_on_close_request(false)
         .run_with(App::new)
 }
@@ -164,7 +164,7 @@ impl App {
                             .shaping(Shaping::Advanced),
                     )
                     .style(button::success)
-                    .width(100)
+                    .width(80)
                     .padding(10);
                     // .on_press(Message::Exit);
 
@@ -198,7 +198,7 @@ impl App {
         //     center(checkbox("Listen to runtime events", self.enabled).on_toggle(Message::Toggled));
 
         let exit = button(
-            text("Exit \u{F1F8}")
+            text("Exit \u{F17F3}")
                 .shaping(Advanced)
                 .width(Fill)
                 .align_x(Center),

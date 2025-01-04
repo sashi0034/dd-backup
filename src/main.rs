@@ -181,11 +181,17 @@ impl App {
                                     horizontal_space(),
                                     Text::new(&file.last_edited)
                                 ],
-                                widget::row![text_input("", &file.export_path)
-                                    .on_input(Message::SourceDirectoryInput)
-                                    .on_submit(Message::SourceDirectorySubmit)]
+                                widget::row![
+                                    Text::new("\u{F021D}")
+                                        .shaping(Advanced)
+                                        .style(text::primary),
+                                    text_input("(no export)", &file.export_path)
+                                        .on_input(Message::SourceDirectoryInput)
+                                        .on_submit(Message::SourceDirectorySubmit)
+                                ]
                                 .spacing(10)
-                                .padding(Padding::from([5, 10]))
+                                .padding(Padding::from([5, 0]))
+                                .align_y(Center)
                             ]
                         ]
                         .align_y(Center)

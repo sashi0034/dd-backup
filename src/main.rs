@@ -14,7 +14,6 @@ use iced::{Center, Element, Fill, Subscription, Task};
 use rfd::FileDialog;
 use std::path::{Path, PathBuf};
 use std::string::ToString;
-
 pub fn main() -> iced::Result {
     iced::application("DD Backup", App::update, App::view)
         .subscription(App::subscription)
@@ -182,44 +181,11 @@ impl App {
             let files = &dir.files;
             files
                 .into_iter()
-                .fold(Column::new(), |col, file| {
-                    let sync_button = button(
-                        text("\u{F1217}")
-                            .width(Fill)
-                            .align_x(Center)
-                            .shaping(Shaping::Advanced),
-                    )
-                    .style(button::success)
-                    .width(50)
-                    .padding(10);
-                    // .on_press(Message::Exit);
-
-                    col.push(
-                        row![
-                            sync_button,
-                            widget::column![
-                                widget::row![
-                                    Text::new(&file.name).shaping(Advanced),
-                                    horizontal_space(),
-                                    Text::new(&file.last_edited)
-                                ],
-                                widget::row![
-                                    Text::new("\u{F021D}")
-                                        .shaping(Advanced)
-                                        .style(text::primary),
-                                    text_input("(no export)", &file.export_path)
-                                        .on_input(Message::SourceDirectoryInput)
-                                        .on_submit(Message::SourceDirectorySubmit)
-                                ]
-                                .spacing(10)
-                                .padding(Padding::from([5, 0]))
-                                .align_y(Center)
-                            ]
-                        ]
-                        .align_y(Center)
-                        .spacing(10)
-                        .padding(Padding::from([5, 10])),
-                    )
+                .enumerate()
+                .fold(Column::new(), |col, (index, file)| {
+                    let file_row = Self::file_row_view(file)
+                        .map(move |message| Message::FileMessage(index, message));
+                    col.push(file_row)
                 })
                 .spacing(10)
                 .width(Fill)
@@ -256,6 +222,46 @@ impl App {
             .spacing(20)
             .padding(20);
         center(content).into()
+    }
+
+    fn file_row_view(file: &FileInfo) -> Element<FileMessage> {
+        let sync_button = button(
+            text("\u{F1217}")
+                .width(Fill)
+                .align_x(Center)
+                .shaping(Shaping::Advanced),
+        )
+        .style(button::success)
+        .width(50)
+        .padding(10);
+        // .on_press(Message::Exit);
+
+        row![
+            sync_button,
+            widget::column![
+                widget::row![
+                    Text::new(&file.name).shaping(Advanced),
+                    horizontal_space(),
+                    Text::new(&file.last_edited)
+                ],
+                widget::row![
+                    Text::new("\u{F021D}")
+                        .shaping(Advanced)
+                        .style(text::primary),
+                    text_input("(no export)", &file.export_path)
+                        .padding(Padding::from([5, 10]))
+                        .on_input(FileMessage::ExportPathInput)
+                        .on_submit(FileMessage::ExportPathSubmit)
+                ]
+                .spacing(10)
+                .padding(Padding::from([5, 0]))
+                .align_y(Center)
+            ]
+        ]
+        .align_y(Center)
+        .spacing(10)
+        .padding(Padding::from([5, 10]))
+        .into()
     }
 
     fn direction_row(&self, button_text: &str, dir_str: &str) -> Row<Message> {

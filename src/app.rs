@@ -4,7 +4,7 @@ use iced::{Event, Task};
 #[derive(Debug, Default)]
 pub struct App {
     pub enabled: bool,
-    pub source_directory: String,
+    pub current_directory: String,
     pub user_data: UserData,
 }
 
@@ -31,7 +31,7 @@ impl App {
         (
             Self {
                 enabled: true,
-                source_directory: "".to_string(),
+                current_directory: "".to_string(),
                 user_data: UserData::new(),
             },
             Task::none(),

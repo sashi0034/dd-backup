@@ -16,10 +16,10 @@ impl App {
                         return Task::none();
                     }
 
-                    self.source_directory = dir_path.unwrap().display().to_string();
+                    self.current_directory = dir_path.unwrap().display().to_string();
                     let current_directory = self
                         .user_data
-                        .touch_directory_or_insert(&self.source_directory);
+                        .touch_directory_or_insert(&self.current_directory);
                     current_directory.files.push(FileInfo::from_path(&path));
 
                     Task::none()
@@ -38,18 +38,18 @@ impl App {
                 })
             }
             Message::DirectorySelected(directory) => {
-                self.source_directory = directory.unwrap_or_else(|| self.source_directory.clone());
+                self.current_directory = directory.unwrap_or_else(|| self.current_directory.clone());
 
                 Task::none()
             }
             Message::SourceDirectoryInput(dir) => {
-                self.source_directory = dir;
+                self.current_directory = dir;
 
                 Task::none()
             }
             Message::SourceDirectorySubmit => Task::none(),
             Message::FileMessage(index, file_message) => {
-                let current_directory = self.user_data.touch_directory(&self.source_directory);
+                let current_directory = self.user_data.touch_directory(&self.current_directory);
                 if let Some(dir) = current_directory {
                     if let Some(file) = dir.touch_file(index) {
                         match file_message {

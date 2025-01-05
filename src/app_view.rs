@@ -1,5 +1,5 @@
 use crate::app::{App, FileMessage, Message};
-use crate::user_data::FileInfo;
+use crate::user_data::{DirectoryInfo, FileInfo};
 use iced::widget::text::Shaping;
 use iced::widget::text::Shaping::Advanced;
 use iced::widget::{
@@ -9,8 +9,8 @@ use iced::{widget, Center, Element, Fill, Left, Padding};
 
 impl App {
     pub fn view(&self) -> Element<Message> {
-        let current_directory = self.user_data.find_directory(&self.source_directory);
-        let file_list = scrollable(if let Some(dir) = current_directory {
+        let current_directory = self.user_data.find_directory(&self.current_directory);
+        let file_list_elem = scrollable(if let Some(dir) = current_directory {
             let files = &dir.files;
             files
                 .into_iter()
@@ -42,15 +42,11 @@ impl App {
         .padding(10)
         .on_press(Message::Exit);
 
-        let source_dir_row = self.direction_row("Source Directory", &self.source_directory);
+        let current_dir_elem = self.view_current_dir();
 
-        let destination_dir_row = if let Some(dir) = current_directory {
-            self.direction_row("Destination Directory", &dir.backup_directory)
-        } else {
-            self.direction_row("Destination Directory", "")
-        };
+        let destination_dir_elem = self.view_backup_dir(current_directory);
 
-        let content = widget::column![source_dir_row, destination_dir_row, file_list, exit]
+        let content = widget::column![current_dir_elem, destination_dir_elem, file_list_elem, exit]
             .align_x(Center)
             .spacing(20)
             .padding(20);
@@ -97,20 +93,37 @@ impl App {
         .into()
     }
 
-    fn direction_row(&self, button_text: &str, dir_str: &str) -> Row<Message> {
-        let open_directory_button = button(text(button_text.to_string()).align_x(Center))
+    fn view_current_dir(&self) -> Row<Message> {
+        let open_directory_button = button(text("Current Directory".to_string()).align_x(Center))
             .width(200)
             .padding(10)
             .on_press(Message::DirectoryOpen);
 
-        // let directory_text = Text::new(
-        //     self.selected_directory
-        //         .clone()
-        //         .unwrap_or_else(|| "(Nothing selected)".to_string()),
-        // )
-        // .width(400);
+        let directory_input = text_input("", &self.current_directory)
+            .width(Fill)
+            .padding(10)
+            .on_input(Message::SourceDirectoryInput)
+            .on_submit(Message::SourceDirectorySubmit);
 
-        let directory_input = text_input("", &dir_str)
+        row![open_directory_button, directory_input]
+            .align_y(Center)
+            .spacing(10)
+            .padding(Padding::from([0, 20]))
+    }
+
+    fn view_backup_dir(&self, current_directory: Option<&DirectoryInfo>) -> Row<Message> {
+        let open_directory_button = button(text("Backup Directory".to_string()).align_x(Center))
+            .width(200)
+            .padding(10)
+            .on_press(Message::DirectoryOpen);
+
+        let backup_dir = if let Some(dir) = current_directory {
+            &dir.backup_directory
+        } else {
+            ""
+        };
+
+        let directory_input = text_input("", backup_dir)
             .width(Fill)
             .padding(10)
             .on_input(Message::SourceDirectoryInput)

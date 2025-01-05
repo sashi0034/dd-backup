@@ -1,11 +1,24 @@
 use crate::app::{App, FileMessage, Message};
-use crate::user_data::{DirectoryInfo, FileInfo};
+use crate::user_data::{is_valid_directory, DirectoryInfo, FileInfo};
+use iced::widget::rule::Catalog;
 use iced::widget::text::Shaping;
 use iced::widget::text::Shaping::Advanced;
+use iced::widget::text_input::Status;
 use iced::widget::{
     button, center, horizontal_space, row, scrollable, text, text_input, Column, Row, Text,
 };
-use iced::{widget, Center, Element, Fill, Left, Padding};
+use iced::{widget, Center, Element, Fill, Left, Padding, Theme};
+fn text_input_style(is_valid: bool) -> fn(&Theme, text_input::Status) -> text_input::Style {
+    if is_valid {
+        text_input::default
+    } else {
+        |theme: &Theme, status: Status| {
+            let mut style = text_input::default(theme, status);
+            style.border.color = theme.palette().danger;
+            style
+        }
+    }
+}
 
 impl App {
     pub fn view(&self) -> Element<Message> {
@@ -102,8 +115,8 @@ impl App {
         let directory_input = text_input("", &self.current_directory)
             .width(Fill)
             .padding(10)
-            .on_input(Message::SourceDirectoryInput)
-            .on_submit(Message::SourceDirectorySubmit);
+            .on_input(Message::CurrentDirectoryInput)
+            .on_submit(Message::CurrentDirectorySubmit);
 
         row![open_directory_button, directory_input]
             .align_y(Center)
@@ -120,14 +133,16 @@ impl App {
         let backup_dir = if let Some(dir) = current_directory {
             &dir.backup_directory
         } else {
-            ""
+            &String::from("")
         };
 
+        let backup_dir_valid = is_valid_directory(&backup_dir);
         let directory_input = text_input("", backup_dir)
             .width(Fill)
             .padding(10)
-            .on_input(Message::SourceDirectoryInput)
-            .on_submit(Message::SourceDirectorySubmit);
+            .on_input(Message::BackupDirectoryInput)
+            .on_submit(Message::BackupDirectorySubmit)
+            .style(text_input_style(backup_dir_valid));
 
         row![open_directory_button, directory_input]
             .align_y(Center)

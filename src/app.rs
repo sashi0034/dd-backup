@@ -20,8 +20,10 @@ pub enum Message {
     Toggled(bool),
     DirectoryOpen,
     DirectorySelected(Option<String>),
-    SourceDirectoryInput(String),
-    SourceDirectorySubmit,
+    CurrentDirectoryInput(String),
+    CurrentDirectorySubmit,
+    BackupDirectoryInput(String),
+    BackupDirectorySubmit,
     FileMessage(usize, FileMessage),
     Exit,
 }

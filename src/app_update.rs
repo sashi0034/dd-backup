@@ -1,4 +1,4 @@
-use crate::app::{Message, App, FileMessage};
+use crate::app::{App, FileMessage, Message};
 use crate::get_directory_of_file;
 use crate::user_data::FileInfo;
 use iced::{window, Event, Task};
@@ -38,16 +38,25 @@ impl App {
                 })
             }
             Message::DirectorySelected(directory) => {
-                self.current_directory = directory.unwrap_or_else(|| self.current_directory.clone());
+                self.current_directory =
+                    directory.unwrap_or_else(|| self.current_directory.clone());
 
                 Task::none()
             }
-            Message::SourceDirectoryInput(dir) => {
+            Message::CurrentDirectoryInput(dir) => {
                 self.current_directory = dir;
+                Task::none()
+            }
+            Message::CurrentDirectorySubmit => Task::none(),
+            Message::BackupDirectoryInput(backup_dir) => {
+                let current_directory = self.user_data.touch_directory(&self.current_directory);
+                if let Some(dir) = current_directory {
+                    dir.backup_directory = backup_dir;
+                }
 
                 Task::none()
             }
-            Message::SourceDirectorySubmit => Task::none(),
+            Message::BackupDirectorySubmit => Task::none(),
             Message::FileMessage(index, file_message) => {
                 let current_directory = self.user_data.touch_directory(&self.current_directory);
                 if let Some(dir) = current_directory {

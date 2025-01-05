@@ -1,4 +1,5 @@
 use chrono::{DateTime, Local};
+use std::fs;
 use std::path::Path;
 
 #[derive(Debug, Clone)]
@@ -6,6 +7,7 @@ pub struct FileInfo {
     pub name: String,
     pub last_edited: String,
     pub export_path: String,
+    pub synced: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -20,12 +22,36 @@ pub struct UserData {
     pub directories: Vec<DirectoryInfo>,
 }
 
+pub fn is_valid_directory(directory_path: &String) -> bool {
+    if directory_path.len() <= 1 {
+        return false;
+    }
+
+    let path = Path::new(directory_path);
+    path.is_dir() && fs::metadata(path).is_ok()
+}
+
+pub fn is_valid_file(file_path: &String) -> bool {
+    let path = Path::new(file_path);
+    path.is_file() && fs::metadata(path).is_ok()
+}
+
+pub fn get_backup_path(target_file: &String) -> String {
+    let metadata = Path::new(target_file).metadata().ok();
+    let last_edited: DateTime<Local> = metadata
+        .and_then(|m| m.modified().ok().map(DateTime::from))
+        .unwrap_or_else(Local::now);
+    let date = last_edited.format("%Y-%m-%d-%H-%M-%S").to_string();
+    format!("{}_{}", date, target_file)
+}
+
 impl FileInfo {
     pub fn new(name: String, modified: String, export_path: String) -> Self {
         FileInfo {
             name,
             last_edited: modified,
             export_path,
+            synced: false,
         }
     }
 
@@ -40,7 +66,12 @@ impl FileInfo {
             name,
             last_edited: last_edited.format("%Y-%m-%d %H:%M:%S").to_string(),
             export_path: "".to_string(),
+            synced: false,
         }
+    }
+
+    pub fn backup_filename(&self) -> String {
+        get_backup_path(&self.name)
     }
 }
 

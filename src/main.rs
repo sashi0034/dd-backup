@@ -35,6 +35,12 @@ struct App {
 }
 
 #[derive(Debug, Clone)]
+enum FileMessage {
+    ExportPathInput(String),
+    ExportPathSubmit,
+}
+
+#[derive(Debug, Clone)]
 enum Message {
     EventOccurred(Event),
     Toggled(bool),
@@ -42,6 +48,7 @@ enum Message {
     DirectorySelected(Option<String>),
     SourceDirectoryInput(String),
     SourceDirectorySubmit,
+    FileMessage(usize, FileMessage),
     Exit,
 }
 
@@ -139,6 +146,21 @@ impl App {
                 Task::none()
             }
             Message::SourceDirectorySubmit => Task::none(),
+            Message::FileMessage(index, file_message) => {
+                let current_directory = self.user_data.touch_directory(&self.source_directory);
+                if let Some(dir) = current_directory {
+                    if let Some(file) = dir.touch_file(index) {
+                        match file_message {
+                            FileMessage::ExportPathInput(path) => {
+                                file.export_path = path;
+                            }
+                            FileMessage::ExportPathSubmit => {}
+                        }
+                    }
+                }
+
+                Task::none()
+            }
             Message::Exit => window::get_latest().and_then(window::close),
         }
     }

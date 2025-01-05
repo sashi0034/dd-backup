@@ -56,6 +56,10 @@ impl DirectoryInfo {
     pub fn add_file(&mut self, file: FileInfo) {
         self.files.push(file);
     }
+
+    pub fn touch_file(&mut self, index: usize) -> Option<&mut FileInfo> {
+        self.files.get_mut(index)
+    }
 }
 
 impl UserData {

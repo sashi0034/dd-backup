@@ -36,13 +36,27 @@ pub fn is_valid_file(file_path: &String) -> bool {
     path.is_file() && fs::metadata(path).is_ok()
 }
 
-pub fn get_backup_path(target_file: &String) -> String {
-    let metadata = Path::new(target_file).metadata().ok();
-    let last_edited: DateTime<Local> = metadata
-        .and_then(|m| m.modified().ok().map(DateTime::from))
-        .unwrap_or_else(Local::now);
-    let date = last_edited.format("%Y-%m-%d-%H-%M-%S").to_string();
-    format!("{}_{}", date, target_file)
+// pub fn get_backup_filename(target_file: &String) -> String {
+//     let metadata = Path::new(target_file).metadata().ok();
+//     let last_edited: DateTime<Local> = metadata
+//         .and_then(|m| m.modified().ok().map(DateTime::from))
+//         .unwrap_or_else(Local::now);
+//     let date = last_edited.format("%Y-%m-%d-%H-%M-%S").to_string();
+//     format!("{}_{}", date, target_file)
+// }
+
+pub fn append_path(base: &String, path: &String) -> String {
+    if base.len() == 0 {
+        return path.clone();
+    }
+
+    if path.len() == 0 {
+        return base.clone();
+    }
+
+    let base = base.trim_end_matches(|c| c == '/' || c == '\\');
+    let path = path.trim_start_matches(|c| c == '/' || c == '\\');
+    format!("{}/{}", base, path)
 }
 
 impl FileInfo {
@@ -71,7 +85,30 @@ impl FileInfo {
     }
 
     pub fn backup_filename(&self) -> String {
-        get_backup_path(&self.name)
+        let date = self.last_edited.replace(" ", "-").replace(":", "-");
+        format!("{}_{}", date, self.name)
+    }
+
+    pub fn refresh_synced(&mut self, backup_directory: &String) {
+        let backup_synced = is_valid_directory(backup_directory)
+            && is_valid_file(&append_path(backup_directory, &self.backup_filename()));
+        // let export_synced = !is_valid_directory(&self.export_path)
+        //     || is_valid_file(&append_path(&self.export_path, &self.name));
+        self.synced = backup_synced;
+    }
+
+    pub fn sync(&mut self, self_directory: &String, backup_directory: &String) {
+        let self_path = append_path(&self_directory, &self.name);
+
+        if (is_valid_directory(backup_directory)) {
+            let backup_path = append_path(&backup_directory, &self.backup_filename());
+            fs::copy(&self_path, backup_path).ok();
+        }
+
+        if (is_valid_directory(&self.export_path)) {
+            let export_path = append_path(&self.export_path, &self.name);
+            fs::copy(&self_path, export_path).ok();
+        }
     }
 }
 
@@ -90,6 +127,12 @@ impl DirectoryInfo {
 
     pub fn touch_file(&mut self, index: usize) -> Option<&mut FileInfo> {
         self.files.get_mut(index)
+    }
+
+    pub fn refresh_synced(&mut self) {
+        for file in self.files.iter_mut() {
+            file.refresh_synced(&self.backup_directory);
+        }
     }
 }
 

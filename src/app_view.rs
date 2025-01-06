@@ -67,16 +67,21 @@ impl App {
     }
 
     fn file_row_view(file: &FileInfo) -> Element<FileMessage> {
-        let sync_button = button(
+        let mut sync_button = button(
             text("\u{F1217}")
                 .width(Fill)
                 .align_x(Center)
                 .shaping(Shaping::Advanced),
         )
-        .style(button::success)
         .width(50)
-        .padding(10);
-        // .on_press(AppMessage::Exit);
+        .padding(10)
+        .on_press(FileMessage::Sync);
+
+        if !file.synced {
+            sync_button = sync_button.style(button::success);
+        } else {
+            sync_button = sync_button.style(button::secondary)
+        }
 
         row![
             sync_button,
@@ -129,7 +134,7 @@ impl App {
         let open_directory_button = button(text("Backup Directory".to_string()).align_x(Center))
             .width(200)
             .padding(10)
-            .on_press(Message::CurrentDirectoryOpen);
+            .on_press(Message::BackupDirectoryOpen);
 
         let backup_dir = if let Some(dir) = current_directory {
             &dir.backup_directory

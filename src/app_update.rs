@@ -1,9 +1,8 @@
 use crate::app::{App, FileMessage, Message};
 use crate::get_directory_of_file;
-use crate::user_data::{is_valid_directory, is_valid_file, FileInfo};
+use crate::user_data::{is_valid_file, FileInfo};
 use iced::{window, Event, Task};
 use rfd::FileDialog;
-use std::path::PathBuf;
 
 impl App {
     pub fn update(&mut self, message: Message) -> Task<Message> {
@@ -49,6 +48,13 @@ impl App {
             }
             Message::CurrentDirectoryInput(dir) => {
                 self.change_current_directory(dir);
+                if self.current_directory_valid {
+                    let current_directory_info = self
+                        .user_data
+                        .touch_directory_or_insert(&self.current_directory);
+                    current_directory_info.refresh_synced();
+                }
+
                 Task::none()
             }
             Message::CurrentDirectorySubmit => Task::none(),
@@ -77,8 +83,13 @@ impl App {
             Message::FileMessage(index, file_message) => {
                 let current_directory = self.user_data.touch_directory(&self.current_directory);
                 if let Some(dir) = current_directory {
+                    let backup_directory = dir.backup_directory.clone();
                     if let Some(file) = dir.touch_file(index) {
                         match file_message {
+                            FileMessage::Sync => {
+                                file.sync(&self.current_directory, &backup_directory);
+                                file.refresh_synced(&backup_directory);
+                            }
                             FileMessage::ExportPathInput(path) => {
                                 file.export_path = path;
                             }

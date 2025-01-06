@@ -1,9 +1,10 @@
 use crate::app::{App, FileMessage, Message};
 use crate::get_directory_of_file;
-use crate::save_data::store_save_data;
+use crate::save_data::{store_save_data, SAVE_PATH};
 use crate::user_data::{is_valid_file, FileInfo};
 use iced::{window, Event, Task};
 use rfd::FileDialog;
+use std::process::Command;
 
 impl App {
     pub fn update(&mut self, message: Message) -> Task<Message> {
@@ -99,7 +100,23 @@ impl App {
 
                 Task::none()
             }
-            Message::Exit => window::get_latest().and_then(window::close),
+            Message::OpenSaveData => {
+                open_in_explorer(SAVE_PATH).ok();
+                Task::none()
+            }
         }
     }
+}
+
+fn open_in_explorer(path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    if cfg!(target_os = "windows") {
+        Command::new("explorer").arg(path).spawn()?;
+    } else if cfg!(target_os = "macos") {
+        Command::new("open").arg(path).spawn()?;
+    } else if cfg!(target_os = "linux") {
+        Command::new("xdg-open").arg(path).spawn()?;
+    } else {
+        return Err("Unsupported OS".into());
+    }
+    Ok(())
 }

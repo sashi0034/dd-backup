@@ -40,7 +40,7 @@ struct SaveData {
     directories: Vec<SaveDirectoryData>,
 }
 
-const SAVE_PATH: &str = "save.yaml";
+pub const SAVE_PATH: &str = "save.yaml";
 
 pub fn store_save_data(app: &App) {
     let mut save_data = SaveData {

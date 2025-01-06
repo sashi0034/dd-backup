@@ -1,13 +1,16 @@
 use crate::app::{App, FileMessage, Message};
 use crate::user_data::{is_valid_directory, DirectoryInfo, FileInfo};
 use iced::widget::rule::Catalog;
+use iced::widget::rule::FillMode::Full;
 use iced::widget::text::Shaping;
 use iced::widget::text::Shaping::Advanced;
 use iced::widget::text_input::Status;
 use iced::widget::{
-    button, center, horizontal_space, row, scrollable, text, text_input, Column, Row, Text,
+    button, center, horizontal_rule, horizontal_space, row, scrollable, text, text_input, Column,
+    Row, Text,
 };
 use iced::{widget, Center, Element, Fill, Left, Padding, Theme};
+
 fn text_input_style(is_valid: bool) -> fn(&Theme, text_input::Status) -> text_input::Style {
     if is_valid {
         text_input::default
@@ -22,8 +25,39 @@ fn text_input_style(is_valid: bool) -> fn(&Theme, text_input::Status) -> text_in
 
 impl App {
     pub fn view(&self) -> Element<Message> {
-        let current_directory = self.user_data.find_directory(&self.current_directory);
-        let file_list_elem = scrollable(if let Some(dir) = current_directory {
+        let current_directory_info = self.user_data.find_directory(&self.current_directory);
+
+        // カレントディレクトリ
+        let current_dir_elem = self.view_current_dir();
+
+        // バックアップディレクトリ
+        let backup_dir_elem = self.view_backup_dir(current_directory_info);
+
+        // ファイルリスト (底辺)
+        let file_list_bottom = widget::column![
+            horizontal_rule(0.5),
+            widget::row![
+                text("\u{F0966} Drop files here to backup")
+                    .shaping(Advanced)
+                    .style(text::secondary),
+                horizontal_space(),
+                button(
+                    text("Open Save Data".to_string())
+                        .align_x(Center)
+                        .shaping(Advanced)
+                )
+                .on_press(Message::OpenSaveData)
+                .style(button::primary)
+                .width(200),
+            ]
+            .width(Fill)
+            .align_y(Center)
+            .spacing(10),
+        ]
+        .spacing(10);
+
+        // ファイルリスト (本体)
+        let file_list_elem = scrollable(if let Some(dir) = current_directory_info {
             let files = &dir.files;
             files
                 .into_iter()
@@ -33,33 +67,16 @@ impl App {
                         .map(move |message| Message::FileMessage(index, message));
                     col.push(file_row)
                 })
+                .push(file_list_bottom)
                 .spacing(10)
                 .width(Fill)
                 .align_x(Left)
         } else {
-            Column::new()
+            Column::new().push(file_list_bottom)
         })
         .height(Fill);
 
-        // center をつけると、余白領域を埋め尽くす
-        // let toggle =
-        //     center(checkbox("Listen to runtime events", self.enabled).on_toggle(AppMessage::Toggled));
-
-        // let exit = button(
-        //     text("Exit \u{F17F3}")
-        //         .shaping(Advanced)
-        //         .width(Fill)
-        //         .align_x(Center),
-        // )
-        // .width(100)
-        // .padding(10)
-        // .on_press(Message::Exit);
-
-        let current_dir_elem = self.view_current_dir();
-
-        let destination_dir_elem = self.view_backup_dir(current_directory);
-
-        let content = widget::column![current_dir_elem, destination_dir_elem, file_list_elem]
+        let content = widget::column![current_dir_elem, backup_dir_elem, file_list_elem]
             .align_x(Center)
             .spacing(20)
             .padding(20);

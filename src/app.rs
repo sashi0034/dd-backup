@@ -26,7 +26,7 @@ pub enum Message {
     BackupDirectoryInput(String),
     BackupDirectorySubmit,
     FileMessage(usize, FileMessage),
-    Exit,
+    OpenSaveData,
 }
 
 impl App {

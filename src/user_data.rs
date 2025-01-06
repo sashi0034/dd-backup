@@ -60,6 +60,15 @@ pub fn append_path(base: &String, path: &String) -> String {
 }
 
 impl FileInfo {
+    pub fn empty() -> Self {
+        FileInfo {
+            name: "".to_string(),
+            last_edited: "".to_string(),
+            export_path: "".to_string(),
+            synced: false,
+        }
+    }
+
     pub fn new(name: String, modified: String, export_path: String) -> Self {
         FileInfo {
             name,

@@ -3,11 +3,13 @@
 mod app;
 mod app_update;
 mod app_view;
+mod save_data;
 mod user_data;
 
 use crate::app::{App, Message};
+use crate::save_data::load_save_data;
 use iced::event::{self};
-use iced::Subscription;
+use iced::{Subscription, Task};
 use std::path::{Path, PathBuf};
 use std::string::ToString;
 
@@ -19,8 +21,8 @@ pub fn main() -> iced::Result {
             include_bytes!("../fonts/materialdesignicons/materialdesignicons-webfont.ttf")
                 .as_slice(),
         )
-        // .exit_on_close_request(false)
-        .run_with(App::new)
+        .exit_on_close_request(false)
+        .run_with(|| (load_save_data(), Task::none()))
 }
 
 fn get_directory_of_file(path: &Path) -> Option<PathBuf> {

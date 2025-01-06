@@ -3,7 +3,6 @@ use iced::{Event, Task};
 
 #[derive(Debug, Default)]
 pub struct App {
-    pub enabled: bool,
     pub current_directory: String,
     pub current_directory_valid: bool,
     pub user_data: UserData,
@@ -20,7 +19,6 @@ pub enum FileMessage {
 pub enum Message {
     None,
     EventOccurred(Event),
-    Toggled(bool),
     CurrentDirectoryOpen,
     CurrentDirectoryInput(String),
     CurrentDirectorySubmit,
@@ -35,7 +33,6 @@ impl App {
     pub fn new() -> (Self, Task<Message>) {
         (
             Self {
-                enabled: true,
                 current_directory: "".to_string(),
                 current_directory_valid: false,
                 user_data: UserData::new(),

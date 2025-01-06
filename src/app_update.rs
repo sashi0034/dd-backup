@@ -1,5 +1,6 @@
 use crate::app::{App, FileMessage, Message};
 use crate::get_directory_of_file;
+use crate::save_data::store_save_data;
 use crate::user_data::{is_valid_file, FileInfo};
 use iced::{window, Event, Task};
 use rfd::FileDialog;
@@ -10,6 +11,7 @@ impl App {
             Message::None => Task::none(),
             Message::EventOccurred(event) => {
                 if let Event::Window(window::Event::CloseRequested) = event {
+                    store_save_data(&self);
                     window::get_latest().and_then(window::close)
                 } else if let Event::Window(window::Event::FileDropped(path)) = event {
                     if !is_valid_file(&path.to_str().unwrap_or("").to_string()) {
@@ -31,11 +33,6 @@ impl App {
                 } else {
                     Task::none()
                 }
-            }
-            Message::Toggled(enabled) => {
-                self.enabled = enabled;
-
-                Task::none()
             }
             Message::CurrentDirectoryOpen => {
                 Task::perform(async { FileDialog::new().pick_folder() }, |result| {
@@ -76,6 +73,7 @@ impl App {
                     .user_data
                     .touch_directory_or_insert(&self.current_directory);
                 current_directory.backup_directory = backup_dir;
+                current_directory.refresh_synced();
 
                 Task::none()
             }

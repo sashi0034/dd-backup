@@ -29,7 +29,7 @@ impl Into<FileInfo> for SaveFileData {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct SaveDirectoryData {
-    name: String,
+    path: String,
     backup_directory: String,
     files: Vec<SaveFileData>,
 }
@@ -50,7 +50,7 @@ pub fn store_save_data(app: &App) {
 
     for dir in app.user_data.directories.iter() {
         let mut save_directory = SaveDirectoryData {
-            name: dir.name.clone(),
+            path: dir.path.clone(),
             backup_directory: dir.backup_directory.clone(),
             files: Vec::new(),
         };
@@ -77,14 +77,16 @@ pub fn load_save_data() -> App {
     let mut app = App::default();
     app.change_current_directory(save_data.current_directory);
     for directory in save_data.directories {
-        let dir_info = app.user_data.touch_directory_or_insert(&directory.name);
+        let dir_info = app.user_data.touch_directory_or_insert(&directory.path);
         dir_info.backup_directory = directory.backup_directory;
         for file in directory.files {
             let mut file_info: FileInfo = file.into();
-            file_info.refresh_last_edited(&dir_info.backup_directory);
+            file_info.refresh_last_edited(&dir_info.path);
             file_info.refresh_synced(&dir_info.backup_directory);
             dir_info.add_file(file_info);
         }
+
+        dir_info.sort_files_by_last_edited();
     }
 
     app

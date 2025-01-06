@@ -13,7 +13,7 @@ pub struct FileInfo {
 
 #[derive(Debug, Clone)]
 pub struct DirectoryInfo {
-    pub name: String,
+    pub path: String,
     pub backup_directory: String,
     pub files: Vec<FileInfo>,
 }
@@ -137,7 +137,7 @@ impl FileInfo {
 impl DirectoryInfo {
     pub fn new(name: String, backup_directory: String) -> Self {
         DirectoryInfo {
-            name,
+            path: name,
             backup_directory,
             files: Vec::new(),
         }
@@ -156,6 +156,11 @@ impl DirectoryInfo {
             file.refresh_synced(&self.backup_directory);
         }
     }
+
+    /// files について last_edited 降順でソートする
+    pub fn sort_files_by_last_edited(&mut self) {
+        self.files.sort_by(|a, b| b.last_edited.cmp(&a.last_edited));
+    }
 }
 
 impl UserData {
@@ -170,15 +175,15 @@ impl UserData {
     }
 
     pub fn find_directory(&self, name: &str) -> Option<&DirectoryInfo> {
-        self.directories.iter().find(|d| d.name == name)
+        self.directories.iter().find(|d| d.path == name)
     }
 
     pub fn touch_directory(&mut self, name: &str) -> Option<&mut DirectoryInfo> {
-        self.directories.iter_mut().find(|d| d.name == name)
+        self.directories.iter_mut().find(|d| d.path == name)
     }
 
     pub fn touch_directory_or_insert(&mut self, name: &str) -> &mut DirectoryInfo {
-        if let Some(index) = self.directories.iter().position(|d| d.name == name) {
+        if let Some(index) = self.directories.iter().position(|d| d.path == name) {
             &mut self.directories[index]
         } else {
             let directory = DirectoryInfo::new(name.to_string(), "".to_string());

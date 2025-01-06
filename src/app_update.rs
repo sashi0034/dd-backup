@@ -82,12 +82,13 @@ impl App {
             Message::FileMessage(index, file_message) => {
                 let current_directory = self.user_data.touch_directory(&self.current_directory);
                 if let Some(dir) = current_directory {
+                    let dir_path = dir.path.clone();
                     let backup_directory = dir.backup_directory.clone();
                     if let Some(file) = dir.touch_file(index) {
                         match file_message {
                             FileMessage::Sync => {
-                                file.refresh_last_edited(&backup_directory);
-                                file.sync(&self.current_directory, &backup_directory);
+                                file.refresh_last_edited(&dir_path);
+                                file.sync(&dir_path, &backup_directory);
                                 file.refresh_synced(&backup_directory);
                             }
                             FileMessage::ExportPathInput(path) => {

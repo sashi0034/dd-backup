@@ -45,21 +45,21 @@ impl App {
         // let toggle =
         //     center(checkbox("Listen to runtime events", self.enabled).on_toggle(AppMessage::Toggled));
 
-        let exit = button(
-            text("Exit \u{F17F3}")
-                .shaping(Advanced)
-                .width(Fill)
-                .align_x(Center),
-        )
-        .width(100)
-        .padding(10)
-        .on_press(Message::Exit);
+        // let exit = button(
+        //     text("Exit \u{F17F3}")
+        //         .shaping(Advanced)
+        //         .width(Fill)
+        //         .align_x(Center),
+        // )
+        // .width(100)
+        // .padding(10)
+        // .on_press(Message::Exit);
 
         let current_dir_elem = self.view_current_dir();
 
         let destination_dir_elem = self.view_backup_dir(current_directory);
 
-        let content = widget::column![current_dir_elem, destination_dir_elem, file_list_elem, exit]
+        let content = widget::column![current_dir_elem, destination_dir_elem, file_list_elem]
             .align_x(Center)
             .spacing(20)
             .padding(20);

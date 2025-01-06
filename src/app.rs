@@ -1,10 +1,11 @@
-use crate::user_data::UserData;
+use crate::user_data::{is_valid_directory, UserData};
 use iced::{Event, Task};
 
 #[derive(Debug, Default)]
 pub struct App {
     pub enabled: bool,
     pub current_directory: String,
+    pub current_directory_valid: bool,
     pub user_data: UserData,
 }
 
@@ -16,12 +17,13 @@ pub enum FileMessage {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    None,
     EventOccurred(Event),
     Toggled(bool),
-    DirectoryOpen,
-    DirectorySelected(Option<String>),
+    CurrentDirectoryOpen,
     CurrentDirectoryInput(String),
     CurrentDirectorySubmit,
+    BackupDirectoryOpen,
     BackupDirectoryInput(String),
     BackupDirectorySubmit,
     FileMessage(usize, FileMessage),
@@ -34,9 +36,15 @@ impl App {
             Self {
                 enabled: true,
                 current_directory: "".to_string(),
+                current_directory_valid: false,
                 user_data: UserData::new(),
             },
             Task::none(),
         )
+    }
+
+    pub fn change_current_directory(&mut self, current_directory: String) {
+        self.current_directory = current_directory;
+        self.current_directory_valid = is_valid_directory(&self.current_directory);
     }
 }

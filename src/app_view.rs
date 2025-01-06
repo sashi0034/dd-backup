@@ -110,11 +110,12 @@ impl App {
         let open_directory_button = button(text("Current Directory".to_string()).align_x(Center))
             .width(200)
             .padding(10)
-            .on_press(Message::DirectoryOpen);
+            .on_press(Message::CurrentDirectoryOpen);
 
         let directory_input = text_input("", &self.current_directory)
             .width(Fill)
             .padding(10)
+            .style(text_input_style(self.current_directory_valid))
             .on_input(Message::CurrentDirectoryInput)
             .on_submit(Message::CurrentDirectorySubmit);
 
@@ -128,7 +129,7 @@ impl App {
         let open_directory_button = button(text("Backup Directory".to_string()).align_x(Center))
             .width(200)
             .padding(10)
-            .on_press(Message::DirectoryOpen);
+            .on_press(Message::CurrentDirectoryOpen);
 
         let backup_dir = if let Some(dir) = current_directory {
             &dir.backup_directory
@@ -140,9 +141,9 @@ impl App {
         let directory_input = text_input("", backup_dir)
             .width(Fill)
             .padding(10)
+            .style(text_input_style(backup_dir_valid))
             .on_input(Message::BackupDirectoryInput)
-            .on_submit(Message::BackupDirectorySubmit)
-            .style(text_input_style(backup_dir_valid));
+            .on_submit(Message::BackupDirectorySubmit);
 
         row![open_directory_button, directory_input]
             .align_y(Center)

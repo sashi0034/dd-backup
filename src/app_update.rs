@@ -1,22 +1,28 @@
 use crate::app::{App, FileMessage, Message};
 use crate::get_directory_of_file;
-use crate::user_data::FileInfo;
+use crate::user_data::{is_valid_directory, is_valid_file, FileInfo};
 use iced::{window, Event, Task};
 use rfd::FileDialog;
+use std::path::PathBuf;
 
 impl App {
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::None => Task::none(),
             Message::EventOccurred(event) => {
                 if let Event::Window(window::Event::CloseRequested) = event {
                     window::get_latest().and_then(window::close)
                 } else if let Event::Window(window::Event::FileDropped(path)) = event {
+                    if !is_valid_file(&path.to_str().unwrap_or("").to_string()) {
+                        return Task::none();
+                    }
+
                     let dir_path = get_directory_of_file(&path);
                     if dir_path.is_none() {
                         return Task::none();
                     }
 
-                    self.current_directory = dir_path.unwrap().display().to_string();
+                    self.change_current_directory(dir_path.unwrap().display().to_string());
                     let current_directory = self
                         .user_data
                         .touch_directory_or_insert(&self.current_directory);
@@ -32,27 +38,38 @@ impl App {
 
                 Task::none()
             }
-            Message::DirectoryOpen => {
+            Message::CurrentDirectoryOpen => {
                 Task::perform(async { FileDialog::new().pick_folder() }, |result| {
-                    Message::DirectorySelected(result.map(|path| path.display().to_string()))
+                    if let Some(path) = result {
+                        return Message::CurrentDirectoryInput(path.display().to_string());
+                    }
+
+                    Message::None
                 })
             }
-            Message::DirectorySelected(directory) => {
-                self.current_directory =
-                    directory.unwrap_or_else(|| self.current_directory.clone());
-
-                Task::none()
-            }
             Message::CurrentDirectoryInput(dir) => {
-                self.current_directory = dir;
+                self.change_current_directory(dir);
                 Task::none()
             }
             Message::CurrentDirectorySubmit => Task::none(),
+            Message::BackupDirectoryOpen => {
+                Task::perform(async { FileDialog::new().pick_folder() }, |result| {
+                    if let Some(path) = result {
+                        return Message::BackupDirectoryInput(path.display().to_string());
+                    }
+
+                    Message::None
+                })
+            }
             Message::BackupDirectoryInput(backup_dir) => {
-                let current_directory = self.user_data.touch_directory(&self.current_directory);
-                if let Some(dir) = current_directory {
-                    dir.backup_directory = backup_dir;
+                if !self.current_directory_valid {
+                    return Task::none();
                 }
+
+                let current_directory = self
+                    .user_data
+                    .touch_directory_or_insert(&self.current_directory);
+                current_directory.backup_directory = backup_dir;
 
                 Task::none()
             }

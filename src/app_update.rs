@@ -85,6 +85,7 @@ impl App {
                     if let Some(file) = dir.touch_file(index) {
                         match file_message {
                             FileMessage::Sync => {
+                                file.refresh_last_edited(&backup_directory);
                                 file.sync(&self.current_directory, &backup_directory);
                                 file.refresh_synced(&backup_directory);
                             }

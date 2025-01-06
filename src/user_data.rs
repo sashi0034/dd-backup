@@ -79,18 +79,27 @@ impl FileInfo {
     }
 
     pub fn from_path(path: &Path) -> Self {
-        let metadata = path.metadata().ok();
-        let last_edited: DateTime<Local> = metadata
-            .and_then(|m| m.modified().ok().map(DateTime::from))
-            .unwrap_or_else(Local::now);
         let name = path.file_name().unwrap().to_str().unwrap().to_string();
 
         FileInfo {
             name,
-            last_edited: last_edited.format("%Y-%m-%d %H:%M:%S").to_string(),
+            last_edited: Self::get_last_edited(path),
             export_path: "".to_string(),
             synced: false,
         }
+    }
+
+    pub fn refresh_last_edited(&mut self, self_directory: &String) {
+        self.last_edited =
+            Self::get_last_edited(&Path::new(&append_path(&self_directory, &self.name)));
+    }
+
+    fn get_last_edited(path: &Path) -> String {
+        let metadata = path.metadata().ok();
+        let last_edited: DateTime<Local> = metadata
+            .and_then(|m| m.modified().ok().map(DateTime::from))
+            .unwrap_or_else(Local::now);
+        last_edited.format("%Y-%m-%d %H:%M:%S").to_string()
     }
 
     pub fn backup_filename(&self) -> String {

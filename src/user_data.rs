@@ -8,6 +8,7 @@ pub struct FileInfo {
     pub last_edited: String,
     pub export_path: String,
     pub synced: bool,
+    pub remove_allowed: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -66,6 +67,7 @@ impl FileInfo {
             last_edited: "".to_string(),
             export_path: "".to_string(),
             synced: false,
+            remove_allowed: false,
         }
     }
 
@@ -75,6 +77,7 @@ impl FileInfo {
             last_edited: modified,
             export_path,
             synced: false,
+            remove_allowed: false,
         }
     }
 
@@ -86,6 +89,7 @@ impl FileInfo {
             last_edited: Self::get_last_edited(path),
             export_path: "".to_string(),
             synced: false,
+            remove_allowed: false,
         }
     }
 

@@ -1,7 +1,7 @@
+use crate::app::FileMessage::RemoveAllowedToggled;
 use crate::app::{App, FileMessage, Message};
 use crate::user_data::{is_valid_directory, DirectoryInfo, FileInfo};
 use iced::widget::rule::Catalog;
-use iced::widget::rule::FillMode::Full;
 use iced::widget::text::Shaping;
 use iced::widget::text::Shaping::Advanced;
 use iced::widget::text_input::Status;
@@ -100,8 +100,34 @@ impl App {
             sync_button = sync_button.style(button::secondary)
         }
 
+        let remove_allowed_toggle = widget::toggler(file.remove_allowed)
+            .text_shaping(Advanced)
+            .on_toggle(RemoveAllowedToggled)
+            .width(50);
+
+        let remove_button = if file.remove_allowed {
+            widget::row![
+                remove_allowed_toggle,
+                button(
+                    text("\u{F0A7A}")
+                        .width(Fill)
+                        .align_x(Center)
+                        .shaping(Advanced),
+                )
+                .width(50)
+                .padding(10)
+                .on_press(FileMessage::Remove)
+                .style(button::danger),
+            ]
+            .align_y(Center)
+        } else {
+            widget::row![remove_allowed_toggle]
+        }
+        .spacing(10);
+
         row![
             sync_button,
+            remove_button,
             widget::column![
                 widget::row![
                     Text::new(&file.name).shaping(Advanced),

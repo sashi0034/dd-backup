@@ -94,6 +94,12 @@ impl App {
                                 file.export_path = path;
                             }
                             FileMessage::ExportPathSubmit => {}
+                            FileMessage::Remove => {
+                                dir.files.remove(index);
+                            }
+                            FileMessage::RemoveAllowedToggled(allowed) => {
+                                file.remove_allowed = allowed
+                            }
                         }
                     }
                 }

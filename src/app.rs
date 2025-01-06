@@ -13,6 +13,8 @@ pub enum FileMessage {
     Sync,
     ExportPathInput(String),
     ExportPathSubmit,
+    Remove,
+    RemoveAllowedToggled(bool),
 }
 
 #[derive(Debug, Clone)]

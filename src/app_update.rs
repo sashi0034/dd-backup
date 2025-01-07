@@ -86,6 +86,7 @@ impl App {
                     let backup_directory = dir.backup_directory.clone();
                     if let Some(file) = dir.touch_file(index) {
                         match file_message {
+                            FileMessage::IgnoreInput(_) => {}
                             FileMessage::Sync => {
                                 file.refresh_last_edited(&dir_path);
                                 file.sync(&dir_path, &backup_directory);

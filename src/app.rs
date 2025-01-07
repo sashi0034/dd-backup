@@ -10,6 +10,7 @@ pub struct App {
 
 #[derive(Debug, Clone)]
 pub enum FileMessage {
+    IgnoreInput(String),
     Sync,
     ExportPathInput(String),
     ExportPathSubmit,

@@ -6,10 +6,10 @@ use iced::widget::text::Shaping;
 use iced::widget::text::Shaping::Advanced;
 use iced::widget::text_input::Status;
 use iced::widget::{
-    button, center, horizontal_rule, horizontal_space, row, scrollable, text, text_input, Column,
-    Row, Text,
+    button, center, horizontal_rule, horizontal_space, row, scrollable, text, text_input, Button,
+    Column, Row, Text,
 };
-use iced::{widget, Center, Element, Fill, Left, Padding, Theme};
+use iced::{widget, Center, Element, Fill, Left, Length, Padding, Theme};
 
 fn text_input_style(is_valid: bool) -> fn(&Theme, text_input::Status) -> text_input::Style {
     if is_valid {
@@ -85,7 +85,7 @@ impl App {
 
     fn file_row_view(file: &FileInfo) -> Element<FileMessage> {
         let mut sync_button = button(
-            text("\u{F1217}")
+            text("\u{F1378}")
                 .width(Fill)
                 .align_x(Center)
                 .shaping(Shaping::Advanced),
@@ -125,19 +125,27 @@ impl App {
         }
         .spacing(10);
 
+        let file_name_elem: Element<FileMessage> = if file.remove_allowed {
+            text_input("", &file.name)
+                .on_input(FileMessage::IgnoreInput)
+                .into()
+        } else {
+            text(&file.name).shaping(Advanced).into()
+        };
+
         row![
             sync_button,
             remove_button,
             widget::column![
                 widget::row![
-                    Text::new(&file.name).shaping(Advanced),
+                    file_name_elem,
                     horizontal_space(),
-                    Text::new(&file.last_edited)
+                    Text::new(&file.last_edited).style(text::primary)
                 ],
                 widget::row![
-                    Text::new("\u{F021D}")
-                        .shaping(Advanced)
-                        .style(text::primary),
+                    // Text::new("\u{F021D}")
+                    //     .shaping(Advanced)
+                    //     .style(text::primary),
                     text_input("(no export)", &file.export_path)
                         .padding(Padding::from([5, 10]))
                         .on_input(FileMessage::ExportPathInput)

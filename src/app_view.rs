@@ -11,7 +11,9 @@ use iced::widget::{
 };
 use iced::{widget, Center, Element, Fill, Left, Length, Padding, Theme};
 
-fn text_input_style(is_valid: bool) -> fn(&Theme, text_input::Status) -> text_input::Style {
+fn text_input_style_by_status(
+    is_valid: bool,
+) -> fn(&Theme, text_input::Status) -> text_input::Style {
     if is_valid {
         text_input::default
     } else {
@@ -21,6 +23,12 @@ fn text_input_style(is_valid: bool) -> fn(&Theme, text_input::Status) -> text_in
             style
         }
     }
+}
+
+fn text_input_borderless_style(theme: &Theme, status: text_input::Status) -> text_input::Style {
+    let mut style = text_input::default(theme, status);
+    style.border.color = theme.palette().background;
+    style
 }
 
 impl App {
@@ -128,6 +136,7 @@ impl App {
         let file_name_elem: Element<FileMessage> = if file.remove_allowed {
             text_input("", &file.name)
                 .on_input(FileMessage::IgnoreInput)
+                .style(text_input_borderless_style)
                 .into()
         } else {
             text(&file.name).shaping(Advanced).into()
@@ -138,22 +147,16 @@ impl App {
             remove_button,
             widget::column![
                 widget::row![
-                    file_name_elem,
+                    text_input("", &file.name)
+                        .on_input(FileMessage::IgnoreInput)
+                        .style(text_input_borderless_style),
                     horizontal_space(),
                     Text::new(&file.last_edited).style(text::primary)
                 ],
-                widget::row![
-                    // Text::new("\u{F021D}")
-                    //     .shaping(Advanced)
-                    //     .style(text::primary),
-                    text_input("(no export)", &file.export_path)
-                        .padding(Padding::from([5, 10]))
-                        .on_input(FileMessage::ExportPathInput)
-                        .on_submit(FileMessage::ExportPathSubmit)
-                ]
-                .spacing(10)
-                .padding(Padding::from([5, 0]))
-                .align_y(Center)
+                text_input("(no export)", &file.export_path)
+                    .padding(Padding::from([5, 10]))
+                    .on_input(FileMessage::ExportPathInput)
+                    .on_submit(FileMessage::ExportPathSubmit)
             ]
         ]
         .align_y(Center)
@@ -171,7 +174,7 @@ impl App {
         let directory_input = text_input("", &self.current_directory)
             .width(Fill)
             .padding(10)
-            .style(text_input_style(self.current_directory_valid))
+            .style(text_input_style_by_status(self.current_directory_valid))
             .on_input(Message::CurrentDirectoryInput)
             .on_submit(Message::CurrentDirectorySubmit);
 
@@ -197,7 +200,7 @@ impl App {
         let directory_input = text_input("", backup_dir)
             .width(Fill)
             .padding(10)
-            .style(text_input_style(backup_dir_valid))
+            .style(text_input_style_by_status(backup_dir_valid))
             .on_input(Message::BackupDirectoryInput)
             .on_submit(Message::BackupDirectorySubmit);
 

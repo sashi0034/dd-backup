@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use crate::user_data::{is_valid_directory, UserData};
 use iced::{Event, Task};
 
@@ -22,6 +23,7 @@ pub enum FileMessage {
 pub enum Message {
     None,
     EventOccurred(Event),
+    DropFile(PathBuf),
     CurrentDirectoryOpen,
     CurrentDirectoryInput(String),
     CurrentDirectorySubmit,
@@ -29,6 +31,8 @@ pub enum Message {
     BackupDirectoryInput(String),
     BackupDirectorySubmit,
     FileMessage(usize, FileMessage),
+    AddFileInCurrentDirectory,
+    OpenCurrentDirectory,
     OpenSaveData,
 }
 

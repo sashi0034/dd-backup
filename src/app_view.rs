@@ -6,8 +6,8 @@ use iced::widget::text::Shaping;
 use iced::widget::text::Shaping::Advanced;
 use iced::widget::text_input::Status;
 use iced::widget::{
-    button, center, horizontal_rule, horizontal_space, row, scrollable, text, text_input, Button,
-    Column, Row, Text,
+    button, center, horizontal_rule, horizontal_space, row, scrollable, text, text_input, Column,
+    Row, Text,
 };
 use iced::{widget, Center, Element, Fill, Left, Length, Padding, Theme};
 
@@ -41,6 +41,13 @@ impl App {
         // バックアップディレクトリ
         let backup_dir_elem = self.view_backup_dir(current_directory_info);
 
+        let make_bottom_button = |text: &'static str, message: Message| {
+            button(text.clone())
+                .on_press(message)
+                .style(button::primary)
+                .width(Length::Shrink)
+        };
+
         // ファイルリスト (底辺)
         let file_list_bottom = widget::column![
             horizontal_rule(0.5),
@@ -49,14 +56,9 @@ impl App {
                     .shaping(Advanced)
                     .style(text::secondary),
                 horizontal_space(),
-                button(
-                    text("Open Save Data".to_string())
-                        .align_x(Center)
-                        .shaping(Advanced)
-                )
-                .on_press(Message::OpenSaveData)
-                .style(button::primary)
-                .width(200),
+                make_bottom_button("Open Save Data", Message::OpenSaveData),
+                make_bottom_button("Open Current Directory", Message::OpenCurrentDirectory),
+                make_bottom_button("Add File", Message::AddFileInCurrentDirectory),
             ]
             .width(Fill)
             .align_y(Center)
@@ -82,6 +84,7 @@ impl App {
         } else {
             Column::new().push(file_list_bottom)
         })
+        .spacing(5)
         .height(Fill);
 
         let content = widget::column![current_dir_elem, backup_dir_elem, file_list_elem]

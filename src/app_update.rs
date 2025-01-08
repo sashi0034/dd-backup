@@ -4,6 +4,7 @@ use crate::save_data::{store_save_data, SAVE_PATH};
 use crate::user_data::{is_valid_file, FileInfo};
 use iced::{window, Event, Task};
 use rfd::FileDialog;
+use std::path::Path;
 use std::process::Command;
 
 impl App {
@@ -15,25 +16,28 @@ impl App {
                     store_save_data(&self);
                     window::get_latest().and_then(window::close)
                 } else if let Event::Window(window::Event::FileDropped(path)) = event {
-                    if !is_valid_file(&path.to_str().unwrap_or("").to_string()) {
-                        return Task::none();
-                    }
-
-                    let dir_path = get_directory_of_file(&path);
-                    if dir_path.is_none() {
-                        return Task::none();
-                    }
-
-                    self.change_current_directory(dir_path.unwrap().display().to_string());
-                    let current_directory = self
-                        .user_data
-                        .touch_directory_or_insert(&self.current_directory);
-                    current_directory.files.push(FileInfo::from_path(&path));
-
-                    Task::none()
+                    Task::done(Message::DropFile(path))
                 } else {
                     Task::none()
                 }
+            }
+            Message::DropFile(path) => {
+                if !is_valid_file(&path.to_str().unwrap_or("").to_string()) {
+                    return Task::none();
+                }
+
+                let dir_path = get_directory_of_file(&path);
+                if dir_path.is_none() {
+                    return Task::none();
+                }
+
+                self.change_current_directory(dir_path.unwrap().display().to_string());
+                let current_directory = self
+                    .user_data
+                    .touch_directory_or_insert(&self.current_directory);
+                current_directory.files.push(FileInfo::from_path(&path));
+
+                Task::none()
             }
             Message::CurrentDirectoryOpen => {
                 Task::perform(async { FileDialog::new().pick_folder() }, |result| {
@@ -108,6 +112,19 @@ impl App {
                     }
                 }
 
+                Task::none()
+            }
+            Message::AddFileInCurrentDirectory => {
+                Task::perform(async { FileDialog::new().pick_file() }, |result| {
+                    if let Some(path) = result {
+                        return Message::DropFile(path);
+                    }
+
+                    Message::None
+                })
+            }
+            Message::OpenCurrentDirectory => {
+                open_in_explorer(&self.current_directory).ok();
                 Task::none()
             }
             Message::OpenSaveData => {

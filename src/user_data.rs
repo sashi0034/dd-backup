@@ -60,6 +60,29 @@ pub fn append_path(base: &String, path: &String) -> String {
     format!("{}/{}", base, path)
 }
 
+pub fn get_parent_path(path: &String) -> String {
+    let path = Path::new(path);
+    path.parent().unwrap().to_str().unwrap().to_string()
+}
+
+enum ExportPathState {
+    Invalid,
+    AsDirectoryPath,
+    AsFilePath,
+}
+
+impl ExportPathState {
+    pub fn new(path: &String) -> Self {
+        if is_valid_directory(path) {
+            ExportPathState::AsDirectoryPath
+        } else if is_valid_directory(&get_parent_path(path)) {
+            ExportPathState::AsFilePath
+        } else {
+            ExportPathState::Invalid
+        }
+    }
+}
+
 impl FileInfo {
     pub fn empty() -> Self {
         FileInfo {
@@ -125,6 +148,17 @@ impl FileInfo {
         if (is_valid_directory(backup_directory)) {
             let backup_path = append_path(&backup_directory, &self.backup_filename());
             fs::copy(&self_path, backup_path).ok();
+        }
+
+        match ExportPathState::new(&self.export_path) {
+            ExportPathState::Invalid => {}
+            ExportPathState::AsDirectoryPath => {
+                let export_path = append_path(&self.export_path, &self.name);
+                fs::copy(&self_path, export_path).ok();
+            }
+            ExportPathState::AsFilePath => {
+                fs::copy(&self_path, &self.export_path).ok();
+            }
         }
 
         if (is_valid_directory(&self.export_path)) {

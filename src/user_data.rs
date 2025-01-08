@@ -9,6 +9,7 @@ pub struct FileInfo {
     pub export_path: String,
     pub synced: bool,
     pub remove_allowed: bool,
+    pub export_valid: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -62,7 +63,12 @@ pub fn append_path(base: &String, path: &String) -> String {
 
 pub fn get_parent_path(path: &String) -> String {
     let path = Path::new(path);
-    path.parent().unwrap().to_str().unwrap().to_string()
+    let parent = path.parent();
+    if parent.is_none() {
+        return "".to_string();
+    }
+
+    parent.unwrap().to_str().unwrap().to_string()
 }
 
 enum ExportPathState {
@@ -81,6 +87,13 @@ impl ExportPathState {
             ExportPathState::Invalid
         }
     }
+
+    pub fn is_valid(&self) -> bool {
+        match self {
+            ExportPathState::Invalid => false,
+            _ => true,
+        }
+    }
 }
 
 impl FileInfo {
@@ -91,6 +104,7 @@ impl FileInfo {
             export_path: "".to_string(),
             synced: false,
             remove_allowed: false,
+            export_valid: false,
         }
     }
 
@@ -101,6 +115,7 @@ impl FileInfo {
             export_path,
             synced: false,
             remove_allowed: false,
+            export_valid: false,
         }
     }
 
@@ -113,6 +128,7 @@ impl FileInfo {
             export_path: "".to_string(),
             synced: false,
             remove_allowed: false,
+            export_valid: false,
         }
     }
 
@@ -142,6 +158,10 @@ impl FileInfo {
         self.synced = backup_synced;
     }
 
+    pub fn refresh_export_valid(&mut self) {
+        self.export_valid = ExportPathState::new(&self.export_path).is_valid();
+    }
+
     pub fn sync(&mut self, self_directory: &String, backup_directory: &String) {
         let self_path = append_path(&self_directory, &self.name);
 
@@ -166,6 +186,12 @@ impl FileInfo {
             fs::copy(&self_path, export_path).ok();
         }
     }
+
+    pub fn refresh_metadata(&mut self, self_directory: &String, backup_directory: &String) {
+        self.refresh_last_edited(self_directory);
+        self.refresh_synced(backup_directory);
+        self.refresh_export_valid();
+    }
 }
 
 impl DirectoryInfo {
@@ -185,9 +211,9 @@ impl DirectoryInfo {
         self.files.get_mut(index)
     }
 
-    pub fn refresh_synced(&mut self) {
+    pub fn refresh_files(&mut self) {
         for file in self.files.iter_mut() {
-            file.refresh_synced(&self.backup_directory);
+            file.refresh_metadata(&self.path, &self.backup_directory);
         }
     }
 

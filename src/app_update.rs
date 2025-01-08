@@ -50,7 +50,7 @@ impl App {
                     let current_directory_info = self
                         .user_data
                         .touch_directory_or_insert(&self.current_directory);
-                    current_directory_info.refresh_synced();
+                    current_directory_info.refresh_files();
                 }
 
                 Task::none()
@@ -74,7 +74,7 @@ impl App {
                     .user_data
                     .touch_directory_or_insert(&self.current_directory);
                 current_directory.backup_directory = backup_dir;
-                current_directory.refresh_synced();
+                current_directory.refresh_files();
 
                 Task::none()
             }
@@ -91,9 +91,11 @@ impl App {
                                 file.refresh_last_edited(&dir_path);
                                 file.sync(&dir_path, &backup_directory);
                                 file.refresh_synced(&backup_directory);
+                                file.refresh_export_valid();
                             }
                             FileMessage::ExportPathInput(path) => {
                                 file.export_path = path;
+                                file.refresh_export_valid();
                             }
                             FileMessage::ExportPathSubmit => {}
                             FileMessage::Remove => {

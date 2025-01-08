@@ -83,6 +83,7 @@ pub fn load_save_data() -> App {
             let mut file_info: FileInfo = file.into();
             file_info.refresh_last_edited(&dir_info.path);
             file_info.refresh_synced(&dir_info.backup_directory);
+            file_info.refresh_export_valid();
             dir_info.add_file(file_info);
         }
 

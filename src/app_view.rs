@@ -133,15 +133,6 @@ impl App {
         }
         .spacing(10);
 
-        let file_name_elem: Element<FileMessage> = if file.remove_allowed {
-            text_input("", &file.name)
-                .on_input(FileMessage::IgnoreInput)
-                .style(text_input_borderless_style)
-                .into()
-        } else {
-            text(&file.name).shaping(Advanced).into()
-        };
-
         row![
             sync_button,
             remove_button,
@@ -155,6 +146,9 @@ impl App {
                 ],
                 text_input("(no export)", &file.export_path)
                     .padding(Padding::from([5, 10]))
+                    .style(text_input_style_by_status(
+                        file.export_path.is_empty() || file.export_valid
+                    ))
                     .on_input(FileMessage::ExportPathInput)
                     .on_submit(FileMessage::ExportPathSubmit)
             ]
